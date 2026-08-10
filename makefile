@@ -17,6 +17,7 @@ IMG := fxos
 CC := clang
 LD := ld.lld
 AS := clang
+QEMU := qemu-system-x86_64
 
 LDSCRIPT := scripts/linker.ld
 
@@ -61,6 +62,14 @@ CFLAGS := --target=x86_64-elf     \
 ASFLAGS := $(CFLAGS)
 
 LDFLAGS := -T $(LDSCRIPT) -nostdlib
+
+QEMUFLAGS := -bios /usr/share/ovmf/OVMF.fd       \
+             -drive file=bin/disk.img,format=raw \
+             -serial null                        \
+             -serial null                        \
+             -serial stdio                       \
+             -d int -D qemu.log                  \
+             -no-reboot
 
 #
 # Sources and Objects
@@ -147,25 +156,8 @@ bin/disk.img: bin/$(IMG)
 
 run: img
 	@echo RUN
-	$(Q)qemu-system-x86_64                  \
-	    -bios                               \
-	    /usr/share/ovmf/OVMF.fd             \
-	    -drive file=bin/disk.img,format=raw \
-	    -serial null                        \
-	    -serial null                        \
-	    -serial stdio                       \
-	    -d int -D qemu.log                  \
-	    -no-reboot
+	$(Q)$(QEMU) $(QEMUFLAGS)
 
 run-debug: img
 	@echo RUN
-	$(Q)qemu-system-x86_64                  \
-	    -bios                               \
-	    /usr/share/ovmf/OVMF.fd             \
-	    -drive file=bin/disk.img,format=raw \
-	    -serial null                        \
-	    -serial null                        \
-	    -serial stdio                       \
-	    -S -s                               \
-	    -d int -D qemu.log                  \
-	    -no-reboot
+	$(Q)$(QEMU) $(QEMUFLAGS) -S -s
