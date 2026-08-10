@@ -36,6 +36,19 @@ struct trap_frame {
     uint64_t ss;
 } __attribute__((packed));
 
+/*
+ * The context saves only callee-saved registers.
+ */
+struct context {
+    uint64_t rbx;
+    uint64_t r12;
+    uint64_t r13;
+    uint64_t r14;
+    uint64_t r15;
+    uint64_t rsp;
+    uint64_t rbp;
+} __attribute__((packed));
+
 __noreturn void panic(const char *msg, ...);
 __noreturn void vpanic(const char *msg, va_list args);
 void panic_use_console(void);
@@ -44,5 +57,7 @@ void kprintf(const char *fmt, ...);
 void vkprintf(const char *fmt, va_list args);
 
 void init_interrupt(void);
+
+struct context *swap_context(struct context *current, struct context *next);
 
 #endif

@@ -80,7 +80,7 @@ CSOURCES := init/main.c rtl/snprintf.c rtl/string.c \
             drivers/uart.c drivers/framebuffer.c drivers/fbcon.c \
             cpu/idt.c cpu/gdt.c
 
-ASMSOURCES := boot/boot.S kernel/asm.S
+ASMSOURCES := boot/boot.S kernel/asm.S kernel/context.S
 
 OBJECTS := $(addprefix $(BIN), $(CSOURCES:.c=.o)) $(addprefix $(BIN), $(ASMSOURCES:.S=.o))
 
