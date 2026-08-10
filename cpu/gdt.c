@@ -52,7 +52,7 @@ struct tss {
     uint64_t reserved2;
     uint16_t reserved3;
     uint16_t iomap_base;
-};
+} __attribute__((packed));
 
 struct gdtr {
     uint16_t limit;
@@ -77,7 +77,7 @@ void init_gdt(void)
 {
     memset(&tss, 0, sizeof(tss));
     tss.rsp0       = 0;
-    tss.ist1       = (uint64_t)ist1;
+    tss.ist1       = (uint64_t)ist1 + sizeof(ist1);
     tss.iomap_base = 0xFFFF;
 
     gdt[5] = MAKE_GDTE((uintptr_t)&tss & 0xFFFFFFFF, sizeof(tss) - 1, GDTE_ACCESS_TSS, 0);

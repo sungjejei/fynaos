@@ -8,6 +8,9 @@
 #include <fynaos/kernel.h>
 #include <fynaos/cpu.h>
 
+#define SET_IDTE(vector, attr, ist) \
+        set_idt_entry((vector), isr_table[(vector)], attr, ist)
+
 extern void *isr_table[IDT_COUNT];
 
 __noreturn void interrupt_service(struct trap_frame *frame);
@@ -19,10 +22,10 @@ __noreturn void interrupt_service(struct trap_frame *frame)
 {
     switch (frame->vector)
     {
-    case 3:
+    case CPU_EXCEPTION_DEBUG_BREAK:
         debug_break_exception(frame);
 
-    case 2:
+    case CPU_EXCEPTION_NON_MASKABLE_INTERRUPT:
         nmi_exception(frame);
 
     default:
@@ -82,26 +85,18 @@ __noreturn void nmi_exception(struct trap_frame *frame)
 
 void init_interrupt(void)
 {
+    uint8_t attr = IDT_ATTRIBUTE_PRESENT |
+                   IDT_ATTRIBUTE_PRIVILEGE_KERNELONLY |
+                   IDT_ATTRIBUTE_TYPE_INTERRUPT_GATE;
+
     init_idt();
 
     for (unsigned int i = 0; i < IDT_COUNT; i++)
     {
-        set_idt_entry(
-            i,
-            isr_table[i],
-            IDT_ATTRIBUTE_PRESENT |
-            IDT_ATTRIBUTE_PRIVILEGE_KERNELONLY |
-            IDT_ATTRIBUTE_TYPE_INTERRUPT_GATE,
-            0
-            );
+        SET_IDTE(i, attr,  0);
     }
 
-    set_idt_entry(
-        3,
-        isr_table[3],
-        IDT_ATTRIBUTE_PRESENT |
-        IDT_ATTRIBUTE_PRIVILEGE_KERNELONLY |
-        IDT_ATTRIBUTE_TYPE_INTERRUPT_GATE,
-        1
-    );
+    SET_IDTE(CPU_EXCEPTION_NON_MASKABLE_INTERRUPT, attr, 1);
+    SET_IDTE(CPU_EXCEPTION_DOUBLE_FAULT, attr, 1);
+    SET_IDTE(CPU_EXCEPTION_MACHINE_CHECK, attr, 1);
 }
