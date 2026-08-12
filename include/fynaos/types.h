@@ -37,8 +37,9 @@ typedef int boolean_t;
 typedef uint64_t uintptr_t;
 typedef int64_t  intptr_t;
 
-typedef uintptr_t paddr_t;
-typedef uintptr_t vaddr_t;
+typedef uintptr_t phys_addr_t;
+typedef uintptr_t virt_addr_t;
+typedef uintptr_t page_index_t;
 
 typedef uint64_t size_t;
 
@@ -47,6 +48,7 @@ typedef uint64_t size_t;
  */
 
 #define ALIGN_UP(ADDR, ALIGN) (((uintptr_t)ADDR + (uintptr_t)(ALIGN - 1)) & ~(uintptr_t)(ALIGN - 1))
+#define ALIGN_DOWN(ADDR, ALIGN) (((uintptr_t)ADDR) & ~((uintptr_t)ALIGN - 1))
 #define OFFSET_OF(STRUCT, MEMBER) (&(STRUCT*)0->MEMBER)
 
 /*
@@ -60,6 +62,12 @@ typedef uint64_t size_t;
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
+
+/*
+ * Address values
+ */
+
+#define INVALID_ADDRESS (uintptr_t)-1
 
 /*
  * errnos

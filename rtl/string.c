@@ -16,3 +16,13 @@ void *memset(void *dst, int val, size_t len)
     }
     return dst;
 }
+
+void *memcpy(void *dst, void *src, size_t c)
+{
+    for (size_t i = 0; i < c; i++)
+    {
+        ((uint8_t*)dst)[i] = ((uint8_t*)src)[i];
+    }
+
+    return dst;
+}

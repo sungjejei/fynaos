@@ -17,6 +17,8 @@ SECTIONS
     
     . = 0x100000;
 
+    _KERNEL_IMAGE_PHYS_START = .;
+
     . = ALIGN(4096);
     .init : {
         KEEP(*(.init.multiboot2))
@@ -44,4 +46,6 @@ SECTIONS
     .bss : AT(ADDR(.bss) - 0xFFFFFFFF80000000) {
         *(.bss*)
     }
+
+    _KERNEL_IMAGE_PHYS_END = . - _KERNEL_IMAGE_BASE;
 }

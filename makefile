@@ -31,7 +31,6 @@ CWARNS := -Wall                 \
           -Wmissing-prototypes  \
           -Wstrict-prototypes   \
           -Wpointer-arith       \
-          -Wcast-align          \
           -Wcast-qual           \
           -Wunused              \
           -Wunused-function     \
@@ -44,7 +43,7 @@ CFLAGS := --target=x86_64-elf     \
           -nostdlib               \
           -fno-pic                \
           -fno-stack-protector    \
-		  -mno-red-zone           \
+          -mno-red-zone           \
           -fno-pie                \
           -fno-omit-frame-pointer \
           -fcf-protection=none    \
@@ -78,7 +77,8 @@ QEMUFLAGS := -bios /usr/share/ovmf/OVMF.fd       \
 CSOURCES := init/main.c rtl/snprintf.c rtl/string.c \
             kernel/kprintf.c kernel/panic.c kernel/interrupt.c \
             drivers/uart.c drivers/framebuffer.c drivers/fbcon.c \
-            cpu/idt.c cpu/gdt.c
+            cpu/idt.c cpu/gdt.c \
+            mm/boot.c mm/mm.c mm/pmm.c mm/pool.c mm/vmm.c
 
 ASMSOURCES := boot/boot.S kernel/asm.S kernel/context.S
 

@@ -5,48 +5,79 @@
  * Copyright (c) 2026 Seongjae Kim
  */
 
+#include "fynaos/mm.h"
+#include <fynaos/types.h>
 #include <fynaos/kernel.h>
 #include <fynaos/cpu.h>
-#include <fynaos/types.h>
-#include <fynaos/drivers/uart.h>
-#include <fynaos/drivers/framebuffer.h>
+#include <fynaos/rtl.h>
+
 #include <fynaos/drivers/fbcon.h>
+#include <fynaos/drivers/framebuffer.h>
+#include <fynaos/drivers/uart.h>
+
 #include <multiboot2.h>
 
-__noreturn void kmain(uint32_t magic, void *info);
+uint8_t                            multiboot_info_buffer[8192 * 2];
+struct multiboot2_info            *multiboot_info_address = (struct multiboot2_info*)multiboot_info_buffer;
+struct multiboot2_tag_mmap        *multiboot_mmap_info = NULL;
+struct multiboot2_tag_framebuffer *multiboot_framebuffer_info = NULL;
 
-static struct multiboot2_tag_framebuffer *get_framebuffer_info(struct multiboot2_info *info)
+void __noreturn kmain(uint32_t magic, struct multiboot2_info *info);
+
+static void validate_multiboot(uint32_t magic)
 {
-    for (struct multiboot2_tag_header *i = MULTIBOOT2_FIRST_TAG(info);
-         i->type != 0;
-         i = MULTIBOOT2_NEXT_TAG(i))
-    {
-        if (i->type == 8) return (struct multiboot2_tag_framebuffer*)i;
-    }
-
-    return NULL;
-}
-
-__noreturn void kmain(uint32_t magic, void *info)
-{
-    uart_init();
-    init_interrupt();
-    
     if (magic != MULTIBOOT2_LOADER_MAGIC)
     {
-        panic("boot failed: invalid bootloader: fynaos must be loaded by GRUB.");
+        panic("FYNAOS must be loaded by GRUB.\n");
     }
+}
 
-    struct multiboot2_tag_framebuffer *framebuffer = get_framebuffer_info(info);
-    
-    if (framebuffer)
+static void copy_multiboot_info(struct multiboot2_info *info)
+{
+    if (info->total_size >= sizeof(multiboot_info_buffer))
     {
-        framebuffer_init(framebuffer);
-        fbcon_init(framebuffer);
-        panic_use_console();
+        panic("Bootloader information is too big.");
     }
+    memcpy(multiboot_info_address, info, info->total_size);
+}
 
+static void parse_multiboot_info(void)
+{
+    for (struct multiboot2_tag_header *i = MULTIBOOT2_FIRST_TAG(multiboot_info_address);
+         i->type != MULTIBOOT2_TAG_END;
+         i = MULTIBOOT2_NEXT_TAG(i))
+    {
+        switch (i->type)
+        {
+        case MULTIBOOT2_TAG_MEMORY_MAP:
+            multiboot_mmap_info = (struct multiboot2_tag_mmap*)i;
+            break;
+
+        case MULTIBOOT2_TAG_FRAMEBUFFER_INFORMATION:
+            multiboot_framebuffer_info = (struct multiboot2_tag_framebuffer*)i;
+            break;
+        }
+    }
+}
+
+void __noreturn kmain(uint32_t magic, struct multiboot2_info *info)
+{
+    uart_init();
+
+    validate_multiboot(magic);
+    
     init_gdt();
+    init_interrupt();
+    
+    copy_multiboot_info(info);
+    parse_multiboot_info();
 
-    halt_cpu_forever();
+    framebuffer_init(multiboot_framebuffer_info);
+    fbcon_init(multiboot_framebuffer_info);
+
+    kprintf("FYNAOS is initializing..\n");
+
+    init_memory(multiboot_mmap_info->entries, MULTIBOOT2_MMAP_ENTRY_COUNT(multiboot_mmap_info));
+
+    for (;;) halt_cpu();
 }

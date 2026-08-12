@@ -141,6 +141,34 @@ static inline __forceinline uintptr_t read_cr2(void)
     return p;
 }
 
+static inline __forceinline unsigned long save_and_disable_interrupts(void)
+{
+    unsigned long flags;
+
+    __asm__ volatile (
+        "pushfq\n\t"
+        "pop %0\n\t"
+        "cli\n\t"
+        :"=r"(flags)
+    );
+
+    return flags;
+}
+
+static inline __forceinline void restore_interrupts(unsigned long flags)
+{
+    __asm__ volatile (
+        "push %0\n\t"
+        "popfq"
+        ::"r"(flags)
+    );
+}
+
+static inline __forceinline void write_cr3(uintptr_t pml4)
+{
+    __asm__ volatile ("mov %0, %%cr3"::"r"(pml4));
+}
+
 void init_gdt(void);
 void set_rsp0(void *stack);
 
