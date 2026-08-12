@@ -21,6 +21,6 @@ typedef uint32_t framebuffer_color_t; /* 0x00RRGGBB */
 int framebuffer_init(struct multiboot2_tag_framebuffer*);
 void framebuffer_write(framebuffer_color_t color, unsigned int x, unsigned int y);
 void framebuffer_read(framebuffer_color_t *color, unsigned int x, unsigned int y);
-void framebuffer_scroll_up(unsigned int scale);
+void framebuffer_scroll_up(unsigned int scale, framebuffer_color_t empty_fill_color);
 
 #endif

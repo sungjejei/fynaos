@@ -51,14 +51,20 @@ void framebuffer_read(framebuffer_color_t *color, unsigned int x, unsigned int y
     *color = FRAMEBUFFER_RGB(red, green, blue);
 }
 
-void framebuffer_scroll_up(unsigned int scale)
+void framebuffer_scroll_up(unsigned int scale, framebuffer_color_t empty_fill)
 {
     for (uint32_t y = 0; y < framebuffer_info.height; y++)
     {
         for (uint32_t x = 0; x < framebuffer_info.width; x++)
         {
-            if (y + scale >= framebuffer_info.height) break;
-            *pixel(x, y) = *pixel(x, y + scale);
+            if (y + scale >= framebuffer_info.height)
+            {
+                framebuffer_write(empty_fill, x, y);
+            }
+            else
+            {
+                *pixel(x, y) = *pixel(x, y + scale);
+            }
         }
     }
 }

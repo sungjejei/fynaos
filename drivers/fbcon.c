@@ -11,18 +11,14 @@
 #include <multiboot2.h>
 #include <font8x8_basic.h>
 
-static uint32_t fbcon_x       = 0; /* per text */
-static uint32_t fbcon_y       = 0; /* per text */
-static uint32_t fbcon_cx      = 0; /* per text */
-static uint32_t fbcon_cy      = 0; /* per text */
-static uint32_t fbcon_text_cx = 8; /* per pixel */
-static uint32_t fbcon_text_cy = 8; /* per pixel */
-static uint8_t  fbcon_fg_r    = 255;
-static uint8_t  fbcon_fg_g    = 255;
-static uint8_t  fbcon_fg_b    = 255;
-static uint8_t  fbcon_bg_r    = 0;
-static uint8_t  fbcon_bg_g    = 0;
-static uint8_t  fbcon_bg_b    = 0;
+static uint32_t            fbcon_x          = 0; /* per text */
+static uint32_t            fbcon_y          = 0; /* per text */
+static uint32_t            fbcon_cx         = 0; /* per text */
+static uint32_t            fbcon_cy         = 0; /* per text */
+static uint32_t            fbcon_text_cx    = 8; /* per pixel */
+static uint32_t            fbcon_text_cy    = 8; /* per pixel */
+static framebuffer_color_t fbcon_foreground = 0x00FFFFFF;
+static framebuffer_color_t fbcon_background = 0x00000000;
 
 static void fbcon_draw_ch(char ch, uint32_t x, uint32_t y)
 {
@@ -32,10 +28,10 @@ static void fbcon_draw_ch(char ch, uint32_t x, uint32_t y)
     {
         for (uint32_t col = 0; col < 8; col++)
         {
-            framebuffer_write(FRAMEBUFFER_RGB(fbcon_bg_r, fbcon_bg_g, fbcon_bg_b), x + col, y + row);
+            framebuffer_write(fbcon_background, x + col, y + row);
             if (font8x8_basic[uch][row] & (1 << col))
             {
-                framebuffer_write(FRAMEBUFFER_RGB(fbcon_fg_r, fbcon_fg_r, fbcon_fg_r), x + col, y + row);
+                framebuffer_write(fbcon_foreground, x + col, y + row);
             }
         }
     }
@@ -94,15 +90,11 @@ int fbcon_init(struct multiboot2_tag_framebuffer *fb)
 void fbcon_set_color(uint8_t fg_r, uint8_t fg_g, uint8_t fg_b,
                      uint8_t bg_r, uint8_t bg_g, uint8_t bg_b)
 {
-    fbcon_fg_r = fg_r;
-    fbcon_fg_g = fg_g;
-    fbcon_fg_b = fg_b;
-    fbcon_bg_r = bg_r;
-    fbcon_bg_g = bg_g;
-    fbcon_bg_b = bg_b;
+    fbcon_foreground = FRAMEBUFFER_RGB(fg_r, fg_g, fg_b);
+    fbcon_background = FRAMEBUFFER_RGB(bg_r, bg_g, bg_b);
 }
 
 void fbcon_scroll_up(void)
 {
-    framebuffer_scroll_up(fbcon_text_cy);
+    framebuffer_scroll_up(fbcon_text_cy, fbcon_background);
 }
