@@ -49,6 +49,8 @@ struct context {
     uint64_t rbp;
 } __attribute__((packed));
 
+typedef int (*interrupt_handler_t)(struct trap_frame *);
+
 __noreturn void panic(const char *msg, ...);
 __noreturn void vpanic(const char *msg, va_list args);
 void panic_use_console(void);
@@ -57,6 +59,8 @@ void kprintf(const char *fmt, ...);
 void vkprintf(const char *fmt, va_list args);
 
 void init_interrupt(void);
+int connect_interrupt(interrupt_handler_t handler, unsigned int number);
+void __noreturn exit_interrupt_service(struct trap_frame *frame);
 
 struct context *swap_context(struct context *current, struct context *next);
 
