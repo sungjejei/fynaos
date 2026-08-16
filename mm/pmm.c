@@ -8,9 +8,10 @@
 #include <fynaos/mm.h>
 #include <fynaos/kernel.h>
 #include <fynaos/rtl.h>
+#include "boot.h"
 
 struct frame *mm_frames;
-size_t        mm_frames_count;
+size_t mm_frames_count;
 struct frame *mm_free_region[FRAME_MAX_ORDER + 1] = { 0 };
 
 static page_index_t frame_to_index(struct frame *frame)

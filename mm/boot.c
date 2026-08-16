@@ -5,7 +5,7 @@
  * Copyright (c) 2026 Seongjae Kim
  */
 
-#include <fynaos/mm.h>
+#include "boot.h"
 
 phys_addr_t boot_begin;
 phys_addr_t boot_tail;

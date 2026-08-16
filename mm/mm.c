@@ -8,6 +8,7 @@
 #include <fynaos/mm.h>
 #include <fynaos/symbols.h>
 #include <multiboot2.h>
+#include "boot.h"
 
 boolean_t init_memory(struct multiboot2_mmap_entry *entries, size_t count)
 {

@@ -20,67 +20,40 @@ void *phys_to_virt(phys_addr_t phys)
 }
 
 /*
- * This function converts virtual address to physical address.
- * if 'mm' is NULL, this function assume that the address space
- * is kernel's.
- * 
- * This function returns converted address.
- * If the virtual address is not presented for the address space,
- * returns INVALID_ADDRESS.
+ * This function converts <virt> to a physical address.
+ * <mm> is an address space for <virt>.
  */
 phys_addr_t virt_to_phys(struct mm *mm, virt_addr_t virt)
 {
-    if (!mm)
-    {
-        if (virt < KERNEL_DIRECT_BASE)
-        {
-            return INVALID_ADDRESS;
-        }
+    uintptr_t *ppml4 = phys_to_virt(mm->pml4 & PAGE_MASK);
 
-        return virt - KERNEL_IMAGE_BASE;
-    }
-
-    page_index_t pml4_index = PML4_INDEX(virt);
-    page_index_t pdpt_index = PDPT_INDEX(virt);
-    page_index_t pd_index   = PD_INDEX(virt);
-    page_index_t pt_index   = PT_INDEX(virt);
-    uintptr_t    offset     = PAGE_OFFSET(virt);
-
-    uintptr_t *pml4  = phys_to_virt(mm->pml4);
-    uintptr_t  pml4e = pml4[pml4_index];
-
-    if (!(pml4e & PAGE_PRESENT))
+    if (!(ppml4[PML4_INDEX(virt)] & PAGE_PRESENT))
     {
         return INVALID_ADDRESS;
     }
 
-    uintptr_t *pdpt  = phys_to_virt(pml4e & ~0xFFFULL);
-    uintptr_t  pdpte = pdpt[pdpt_index];
-    
-    if (!(pdpte & PAGE_PRESENT))
+    uintptr_t *ppdpt = phys_to_virt(ppml4[PML4_INDEX(virt)] & PAGE_MASK);
+
+    if (!(ppdpt[PDPT_INDEX(virt)] & PAGE_PRESENT))
     {
         return INVALID_ADDRESS;
     }
 
-    uintptr_t *pd  = phys_to_virt(pdpte & ~0xFFFULL);
-    uintptr_t  pde = pd[pd_index];
-    
-    if (!(pde & PAGE_PRESENT))
+    uintptr_t *ppd = phys_to_virt(ppdpt[PDPT_INDEX(virt)] & PAGE_MASK);
+
+    if (!(ppd[PD_INDEX(virt)] & PAGE_PRESENT))
     {
         return INVALID_ADDRESS;
     }
 
-    uintptr_t *pt  = phys_to_virt(pde & ~0xFFFULL);
-    uintptr_t  pte = pt[pt_index];
+    uintptr_t *ppt = phys_to_virt(ppd[PD_INDEX(virt)] & PAGE_MASK);
 
-    if (!(pte & PAGE_PRESENT))
+    if (!(ppt[PT_INDEX(virt)] & PAGE_PRESENT))
     {
         return INVALID_ADDRESS;
     }
 
-    phys_addr_t phys = (pte & ~0xFFFULL) + offset;
-    
-    return phys;
+    return (ppt[PT_INDEX(virt)] & PAGE_MASK) + PAGE_OFFSET(virt);
 }
 
 /*
@@ -192,8 +165,8 @@ void map_kernel_for_user_mm(struct mm *mm)
 
 struct mm *create_mm(void)
 {
-    struct mm   *mm;
-    phys_addr_t  pml4_page;
+    struct mm *mm;
+    phys_addr_t pml4_page;
 
     if ((pml4_page = alloc_frames(0)) == INVALID_ADDRESS)
     {
@@ -226,7 +199,7 @@ static void free_page_table(phys_addr_t table, int level)
     for (int i = 0; i < 512; i++)
     {
         if (!(pt[i] & PAGE_PRESENT)) continue;
-        phys_addr_t child = pt[i] & ~PAGE_MASK;
+        phys_addr_t child = pt[i] & PAGE_MASK;
         if (level > 0) free_page_table(child, level - 1);
         else free_frame(child);
     }
