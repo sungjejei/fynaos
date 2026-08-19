@@ -71,6 +71,6 @@ void *kmalloc(size_t len);
 void kfree(void *addr);
 boolean_t init_pool(void);
 
-boolean_t init_memory(struct multiboot2_mmap_entry *entries, size_t count);
+void init_memory(struct multiboot2_mmap_entry *entries, size_t count);
 
 #endif

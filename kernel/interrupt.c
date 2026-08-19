@@ -67,6 +67,7 @@ int connect_interrupt(interrupt_handler_t handler, unsigned int number)
 
     if (!new_node)
     {
+        restore_interrupts(flags);
         return -ENOMEM;
     }
 

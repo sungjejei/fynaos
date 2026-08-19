@@ -6,6 +6,7 @@
  */
 
 #include "boot.h"
+#include <fynaos/kernel.h>
 
 phys_addr_t boot_begin;
 phys_addr_t boot_tail;
@@ -24,7 +25,7 @@ void *alloc_boot_memory(size_t len, unsigned int align)
 
     if (boot_tail + len >= boot_limit)
     {
-        return NULL;
+        panic("failed to allocate boot memory");
     }
 
     void *addr = (void*)(boot_tail + KERNEL_DIRECT_BASE);
@@ -34,8 +35,8 @@ void *alloc_boot_memory(size_t len, unsigned int align)
     return addr;
 }
 
-void get_boot_memory_info(phys_addr_t *begin, size_t *limit)
+void get_boot_memory_info(phys_addr_t *begin, phys_addr_t *tail)
 {
     *begin = boot_begin;
-    *limit = boot_tail;
+    *tail = boot_tail;
 }

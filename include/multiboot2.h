@@ -78,7 +78,7 @@ struct multiboot2_tag_mmap {
         (struct multiboot2_tag_header*)(ALIGN_UP((uintptr_t)PTAG_HEADER + PTAG_HEADER->size, 8))
 
 #define MULTIBOOT2_MMAP_ENTRY_COUNT(MMAP) \
-        (size_t)((MMAP)->header.size - sizeof(struct multiboot2_tag_header) / (MMAP)->entry_size)
+        (size_t)(((MMAP)->header.size - sizeof(struct multiboot2_tag_header)) / (MMAP)->entry_size)
 
 #endif /* ASSEMBLER */
 

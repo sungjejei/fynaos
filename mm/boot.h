@@ -12,6 +12,6 @@
 
 void init_boot_alloc(phys_addr_t begin, phys_addr_t limit);
 void *alloc_boot_memory(size_t len, unsigned int align);
-void get_boot_memory_info(phys_addr_t *begin, size_t *len);
+void get_boot_memory_info(phys_addr_t *begin, phys_addr_t *tail);
 
 #endif

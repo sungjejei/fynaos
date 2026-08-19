@@ -7,79 +7,108 @@
 
 #include <fynaos/mm.h>
 #include <fynaos/symbols.h>
+#include <fynaos/kernel.h>
 #include <multiboot2.h>
 #include "boot.h"
 
-boolean_t init_memory(struct multiboot2_mmap_entry *entries, size_t count)
+void init_memory(struct multiboot2_mmap_entry *entries, size_t count)
 {
-    phys_addr_t boot_begin  = INVALID_ADDRESS;
-    phys_addr_t boot_limit  = INVALID_ADDRESS;
-    phys_addr_t frame_limit = 0;
+    /*
+     * Initialize the boot memory manager
+     */
+
+    phys_addr_t boot_begin = INVALID_ADDRESS;
+    phys_addr_t boot_limit = INVALID_ADDRESS;
+    size_t len = 0;
 
     for (size_t i = 0; i < count; i++)
     {
-        if (entries[i].addr >= 0x100000 &&
-            entries[i].addr >= kernel_image_phys_start() &&
-            entries[i].addr + entries[i].len >= kernel_image_phys_end() &&
-            entries[i].type == 1)
+        if (entries[i].len > len && entries[i].type == 1)
         {
-            boot_begin = kernel_image_phys_end();
-            boot_limit = entries[i].addr + entries[i].len;
-            break;
+            len = entries[i].len;
+            boot_begin = entries[i].addr;
+            boot_limit = entries[i].addr + len;
         }
     }
 
-    if (boot_begin == INVALID_ADDRESS)
+    /* There is no usable memory region! */
+    if (len == 0) panic("failed to initialize the boot manager");
+
+    /* Is the block contains the kernel image? */
+    if (kernel_image_phys_start() >= boot_begin && kernel_image_phys_end() <= boot_limit)
     {
-        return FALSE;
+        boot_begin = kernel_image_phys_start();
     }
 
     init_boot_alloc(boot_begin, boot_limit);
 
-    for (size_t i = 0; i < count; i++)
-    {
-        if (entries[i].addr >= 0x100000 &&
-            entries[i].type == 1 &&
-            entries[i].addr + entries[i].len > frame_limit)
-        {
-            frame_limit = entries[i].addr + entries[i].len;
-        }
-    }
+    /*
+     * Initialize the physical frames
+     */
 
-    init_frames(frame_limit);
+    phys_addr_t ram_limit = 0;
 
     for (size_t i = 0; i < count; i++)
     {
-        if (entries[i].addr >= 0x100000 &&
-            entries[i].type == 1)
+        phys_addr_t limit = entries[i].addr + entries[i].len;
+
+        if (limit > ram_limit && entries[i].type == 1)
         {
-            unreserve_frame_region(entries[i].addr >> PAGE_SHIFT,
-                                   (entries[i].addr + entries[i].len) >> PAGE_SHIFT);
+            ram_limit = limit;
         }
     }
+
+    /* There is no usable memory region! */
+    if (ram_limit == 0) panic("failed to initialize the physical frames");
+
+    init_frames(ram_limit & PAGE_MASK);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        if (entries[i].type == 1)
+        {
+            unreserve_frame_region(
+                entries[i].addr >> PAGE_SHIFT,
+                (entries[i].addr + entries[i].len) >> PAGE_SHIFT
+                );
+        }
+    }
+
+    /*
+     * Initialize the virtual memory manager
+     */
 
     init_kernel_mm(entries, count);
 
+    /*
+     * Initialize the physical frame allocator
+     */
+
     for (size_t i = 0; i < count; i++)
     {
-        if (entries[i].addr >= 0x100000 &&
-            entries[i].type == 1)
+        if (entries[i].type != 1) continue;
+
+        phys_addr_t begin = entries[i].addr;
+        phys_addr_t limit = begin + entries[i].len;
+
+        /* Is the block contains the kernel image? */
+        if (begin <= kernel_image_phys_start() && limit >= kernel_image_phys_end())
         {
-            phys_addr_t begin = entries[i].addr;
-            phys_addr_t limit = entries[i].addr + entries[i].len;
-
-            if (entries[i].addr <= kernel_image_phys_start() &&
-                entries[i].addr + entries[i].len >= kernel_image_phys_end())
-            {
-                phys_addr_t tmp;
-                get_boot_memory_info(&tmp, &begin);
-            }
-
-            init_buddy_allocator(begin >> PAGE_SHIFT, limit >> PAGE_SHIFT);
+            begin = ALIGN_UP(kernel_image_phys_end(), PAGE_SIZE);
         }
+
+        /* Is the block used by the boot allocator? */
+        if (begin <= boot_begin && limit >= boot_limit)
+        {
+            phys_addr_t boot_begin_address;
+            phys_addr_t boot_tail;
+
+            get_boot_memory_info(&boot_begin_address, &boot_tail);
+
+            begin = ALIGN_UP(boot_tail, PAGE_SIZE);
+        }
+
+        /* Pass the information to the allocator */
+        init_buddy_allocator(begin >> PAGE_SHIFT, limit >> PAGE_SHIFT);
     }
-
-    init_pool();
-
-    return TRUE;
 }
