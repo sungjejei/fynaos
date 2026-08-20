@@ -35,8 +35,7 @@ void *alloc_boot_memory(size_t len, unsigned int align)
     return addr;
 }
 
-void get_boot_memory_info(phys_addr_t *begin, phys_addr_t *tail)
+phys_addr_t get_boot_memory_tail(void)
 {
-    *begin = boot_begin;
-    *tail = boot_tail;
+    return boot_tail;
 }

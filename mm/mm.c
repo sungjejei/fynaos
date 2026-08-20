@@ -34,10 +34,10 @@ void init_memory(struct multiboot2_mmap_entry *entries, size_t count)
     /* There is no usable memory region! */
     if (len == 0) panic("failed to initialize the boot manager");
 
-    /* Is the block contains the kernel image? */
+    /* Does the block contain the kernel image? */
     if (kernel_image_phys_start() >= boot_begin && kernel_image_phys_end() <= boot_limit)
     {
-        boot_begin = kernel_image_phys_start();
+        boot_begin = ALIGN_UP(kernel_image_phys_end(), PAGE_SIZE);
     }
 
     init_boot_alloc(boot_begin, boot_limit);
@@ -91,7 +91,7 @@ void init_memory(struct multiboot2_mmap_entry *entries, size_t count)
         phys_addr_t begin = entries[i].addr;
         phys_addr_t limit = begin + entries[i].len;
 
-        /* Is the block contains the kernel image? */
+        /* Does the block contain the kernel image? */
         if (begin <= kernel_image_phys_start() && limit >= kernel_image_phys_end())
         {
             begin = ALIGN_UP(kernel_image_phys_end(), PAGE_SIZE);
@@ -100,12 +100,7 @@ void init_memory(struct multiboot2_mmap_entry *entries, size_t count)
         /* Is the block used by the boot allocator? */
         if (begin <= boot_begin && limit >= boot_limit)
         {
-            phys_addr_t boot_begin_address;
-            phys_addr_t boot_tail;
-
-            get_boot_memory_info(&boot_begin_address, &boot_tail);
-
-            begin = ALIGN_UP(boot_tail, PAGE_SIZE);
+            begin = ALIGN_UP(get_boot_memory_tail(), PAGE_SIZE);
         }
 
         /* Pass the information to the allocator */
